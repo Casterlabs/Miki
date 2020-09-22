@@ -4,71 +4,31 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
-
 import co.casterlabs.miki.parsing.MikiParsingException;
-import co.casterlabs.miki.templating.MikiTemplatingException;
-import lombok.Getter;
+import co.casterlabs.miki.templating.MikiTemplate;
+import co.casterlabs.miki.templating.variables.MikiFileVariable;
+import co.casterlabs.miki.templating.variables.MikiVariable;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
 
-@Getter
-@ToString
-@RequiredArgsConstructor
 public class Miki {
     public static final String VERSION = "1.0.0";
+    public static final char VARIABLE_SIGN = '%';
+    public static final char FILE_SIGN = '@';
+    public static final char OPENING = '[';
+    public static final char CLOSING = ']';
+    public static final char ESCAPE = '\\';
 
-    private static final char SIGN = '%';
-    private static final char OPENING = '[';
-    private static final char CLOSING = ']';
-    private static final char ESCAPE = '\\';
+    public static MikiTemplate parse(@NonNull String input) throws MikiParsingException {
+        List<MikiVariable> variables = new ArrayList<>();
 
-    private @NonNull List<String> variables;
-    private @NonNull String template;
-
-    private @Nullable String preformatted;
-
-    public String format(@NonNull Map<String, String> variables) throws MikiTemplatingException {
-        String result = this.template;
-
-        for (String variable : this.variables) {
-            String replacement = variables.get(variable);
-
-            if (replacement != null) {
-                String variableName = MikiUtil.getVariableName(SIGN, OPENING, CLOSING, variable);
-
-                replacement = replacement.replace(String.valueOf(SIGN), String.valueOf(SIGN) + ESCAPE); // Escape signs that are in variables.
-
-                result = result.replace(variableName, replacement);
-            } else {
-                throw new MikiTemplatingException("Supplied variables are missing the key: " + variable);
-            }
+        for (Map.Entry<String, String> variable : MikiUtil.parseKeys(input, VARIABLE_SIGN, OPENING, CLOSING, ESCAPE).entrySet()) {
+            variables.add(new MikiVariable(variable.getKey(), variable.getValue()));
         }
 
-        return result.replace(SIGN + String.valueOf(ESCAPE), String.valueOf(SIGN)); // Unescape escaped signs.
-    }
-
-    public void preformat(@NonNull Map<String, String> variables) throws MikiTemplatingException {
-        this.preformatted = this.format(variables);
-    }
-
-    public boolean isPreformatted() {
-        return this.preformatted != null;
-    }
-
-    public static Miki parse(@NonNull String input) throws MikiParsingException {
-        List<String> variables = new ArrayList<>();
-        List<Integer> signPositions = MikiUtil.getSignPositions(input, SIGN, ESCAPE);
-
-        for (int position : signPositions) {
-            String variable = MikiUtil.readFrom(position, OPENING, CLOSING, ESCAPE, SIGN, input);
-
-            if (variable != null) {
-                variables.add(variable);
-            }
+        for (Map.Entry<String, String> variable : MikiUtil.parseKeys(input, FILE_SIGN, OPENING, CLOSING, ESCAPE).entrySet()) {
+            variables.add(new MikiFileVariable(variable.getKey(), variable.getValue()));
         }
 
-        return new Miki(variables, input);
+        return new MikiTemplate(variables, input);
     }
 }

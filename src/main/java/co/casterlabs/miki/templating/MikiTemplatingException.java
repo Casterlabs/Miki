@@ -7,4 +7,8 @@ public class MikiTemplatingException extends Exception {
         super(message);
     }
 
+    public MikiTemplatingException(String message, Exception e) {
+        super(message, e);
+    }
+
 }
