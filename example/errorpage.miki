@@ -1,0 +1,13 @@
+{
+	"template_file": "template.html",
+	"variables": [
+		{
+			"name": "code",
+			"value": "404"
+		},
+		{
+			"name": "message",
+			"value": "File Not Found"
+		}
+	]
+}

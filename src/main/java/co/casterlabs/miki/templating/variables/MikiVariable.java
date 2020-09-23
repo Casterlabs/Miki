@@ -13,9 +13,11 @@ public class MikiVariable {
     protected String key;
     protected String name;
 
-    public MikiVariable(String key, String name) {
+    public MikiVariable init(String key, String name) {
         this.key = key;
         this.name = MikiUtil.unescapeString(name);
+
+        return this;
     }
 
     public String evaluate(Map<String, String> variables) throws MikiTemplatingException {
@@ -24,8 +26,12 @@ public class MikiVariable {
         if (variable != null) {
             return variable;
         } else {
-            throw new MikiTemplatingException("Supplied variables are missing the key: " + variable);
+            throw new MikiTemplatingException("Supplied variables are missing the key: " + this.name);
         }
+    }
+
+    public boolean requireGlobal() {
+        return false;
     }
 
 }

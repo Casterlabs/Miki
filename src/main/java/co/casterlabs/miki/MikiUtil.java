@@ -1,12 +1,20 @@
 package co.casterlabs.miki;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import co.casterlabs.miki.parsing.MikiParsingException;
+import co.casterlabs.miki.templating.MikiTemplatingException;
 import lombok.NonNull;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class MikiUtil {
 
@@ -25,6 +33,65 @@ public class MikiUtil {
         return variables;
     }
 
+    public static String getFromURI(String location) throws MikiTemplatingException {
+        if (location.contains("://")) {
+            try {
+                URL url = new URL(location);
+
+                if (url.getProtocol().startsWith("http")) {
+                    return MikiUtil.sendHttp(url);
+                } else {
+                    throw new UnsupportedOperationException("Unsupported scheme: " + url.getProtocol());
+                }
+            } catch (Exception e) {
+                throw new MikiTemplatingException("Unable to read URL", e);
+            }
+        } else {
+            try {
+                byte[] bytes = Files.readAllBytes(new File(location).toPath());
+
+                return new String(bytes);
+            } catch (Exception e) {
+                throw new MikiTemplatingException("Unable to read File", e);
+            }
+        }
+    }
+
+    public static Map<String, String> lowercaseMap(@NonNull Map<String, String> input) {
+        Map<String, String> result = new HashMap<String, String>() {
+            private static final long serialVersionUID = 9190028015798081580L;
+
+            @Override
+            public String get(Object key) {
+                return super.get(((String) key).toLowerCase());
+            }
+
+            @Override
+            public String getOrDefault(Object key, String def) {
+                return super.getOrDefault(((String) key).toLowerCase(), def);
+            }
+
+            @Override
+            public String put(String key, String value) {
+                return super.put(key.toLowerCase(), value);
+            }
+        };
+
+        result.putAll(input);
+
+        return result;
+    }
+
+    public static String sendHttp(URL url) throws IOException {
+        OkHttpClient client = new OkHttpClient();
+        Request.Builder builder = new Request.Builder().url(url);
+
+        Request request = builder.build();
+        Response response = client.newCall(request).execute();
+
+        return response.body().string();
+    }
+
     public static List<Integer> getSignPositions(@NonNull String str, char sign, char escape) {
         List<Integer> positions = new ArrayList<Integer>();
         char[] chars = str.toCharArray();
@@ -39,15 +106,17 @@ public class MikiUtil {
     }
 
     public static String escapeString(@NonNull String str) {
-        str = str.replace(String.valueOf(Miki.VARIABLE_SIGN), Miki.VARIABLE_SIGN + String.valueOf(Miki.ESCAPE));
-        str = str.replace(String.valueOf(Miki.FILE_SIGN), Miki.FILE_SIGN + String.valueOf(Miki.ESCAPE));
+        for (MikiSymbol symbol : MikiSymbol.values()) {
+            str = str.replace(String.valueOf(symbol.getSign()), symbol.getSign() + String.valueOf(Miki.ESCAPE));
+        }
 
         return str;
     }
 
     public static String unescapeString(@NonNull String str) {
-        str = str.replace(Miki.VARIABLE_SIGN + String.valueOf(Miki.ESCAPE), String.valueOf(Miki.VARIABLE_SIGN));
-        str = str.replace(Miki.FILE_SIGN + String.valueOf(Miki.ESCAPE), String.valueOf(Miki.FILE_SIGN));
+        for (MikiSymbol symbol : MikiSymbol.values()) {
+            str = str.replace(symbol.getSign() + String.valueOf(Miki.ESCAPE), String.valueOf(symbol.getSign()));
+        }
 
         return str;
     }

@@ -1,5 +1,6 @@
 package co.casterlabs.miki.templating;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -21,11 +22,13 @@ public class MikiTemplate {
 
     private @Nullable String preformatted;
 
-    public String format(@NonNull Map<String, String> variables) throws MikiTemplatingException {
+    public String format(@NonNull Map<String, String> variables, @NonNull Map<String, String> globals) throws MikiTemplatingException {
         String result = this.template;
 
+        globals = MikiUtil.lowercaseMap(globals);
+
         for (MikiVariable variable : this.variables) {
-            String replacement = variable.evaluate(variables);
+            String replacement = variable.evaluate(variable.requireGlobal() ? globals : variables);
 
             if (replacement != null) {
                 replacement = MikiUtil.escapeString(replacement);
@@ -38,8 +41,16 @@ public class MikiTemplate {
         return MikiUtil.unescapeString(result);
     }
 
-    public void preformat(@NonNull Map<String, String> variables) throws MikiTemplatingException {
-        this.preformatted = this.format(variables);
+    public String format(@NonNull Map<String, String> variables) throws MikiTemplatingException {
+        return this.format(variables, Collections.emptyMap());
+    }
+
+    public String preformat(@NonNull Map<String, String> variables, @NonNull Map<String, String> globals) throws MikiTemplatingException {
+        return this.preformatted = this.format(variables, globals);
+    }
+
+    public String preformat(@NonNull Map<String, String> variables) throws MikiTemplatingException {
+        return this.preformatted = this.format(variables);
     }
 
     public boolean isPreformatted() {
