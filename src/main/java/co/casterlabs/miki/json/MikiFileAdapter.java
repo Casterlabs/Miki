@@ -17,20 +17,22 @@ import co.casterlabs.miki.MikiUtil;
 import co.casterlabs.miki.parsing.MikiParsingException;
 import co.casterlabs.miki.templating.MikiTemplate;
 import co.casterlabs.miki.templating.MikiTemplatingException;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 
+@Getter
 @ToString
 public class MikiFileAdapter {
     private static final Gson GSON = new Gson();
 
     private List<ConfigVariable> variables = new ArrayList<>();
+    private String templateRaw = "";
     @SerializedName("template_location")
     private String templateLocation;
     @SerializedName("template_file")
     private String templateFile;
     @SerializedName("template_raw")
-    private String templateRaw = "";
     private MikiTemplate template;
 
     public String format(Map<String, String> globals) throws MikiTemplatingException {
