@@ -9,13 +9,8 @@ import lombok.ToString;
 public class MikiGlobalVariable extends MikiVariable {
 
     @Override
-    public String evaluate(Map<String, String> variables) throws MikiTemplatingException {
-        return variables.getOrDefault(this.name, "");
-    }
-
-    @Override
-    public boolean requireGlobal() {
-        return true;
+    public String evaluate(Map<String, String> variables, Map<String, String> globals) throws MikiTemplatingException {
+        return globals.getOrDefault(this.name, "");
     }
 
 }

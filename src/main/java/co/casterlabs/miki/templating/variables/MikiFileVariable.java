@@ -10,7 +10,7 @@ import lombok.ToString;
 public class MikiFileVariable extends MikiVariable {
 
     @Override
-    public String evaluate(Map<String, String> variables) throws MikiTemplatingException {
+    public String evaluate(Map<String, String> variables, Map<String, String> globals) throws MikiTemplatingException {
         return MikiUtil.getFromURI(this.name);
     }
 

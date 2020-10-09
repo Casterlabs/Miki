@@ -42,7 +42,7 @@ public class MikiConditionalVariable extends MikiVariable {
     }
 
     @Override
-    public String evaluate(Map<String, String> variables) throws MikiTemplatingException {
+    public String evaluate(Map<String, String> variables, Map<String, String> globals) throws MikiTemplatingException {
         String variable = variables.get(this.name);
 
         if (variable != null) {

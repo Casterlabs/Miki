@@ -23,11 +23,13 @@ public class MikiUtil {
         List<Integer> signPositions = getSignPositions(input, sign, escape);
 
         for (int position : signPositions) {
-            String variable = readFrom(position, opening, closing, escape, sign, input);
+            try {
+                String variable = readFrom(position, opening, closing, escape, sign, input);
 
-            if (variable != null) {
-                variables.put(String.format("%c%c%s%c", sign, opening, variable, closing), variable);
-            }
+                if (variable != null) {
+                    variables.put(String.format("%c%c%s%c", sign, opening, variable, closing), variable);
+                }
+            } catch (MikiParsingException ignored) {}
         }
 
         return variables;

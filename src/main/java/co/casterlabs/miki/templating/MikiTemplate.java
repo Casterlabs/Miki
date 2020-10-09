@@ -28,7 +28,7 @@ public class MikiTemplate {
         globals = MikiUtil.lowercaseMap(globals);
 
         for (MikiVariable variable : this.variables) {
-            String replacement = variable.evaluate(variable.requireGlobal() ? globals : variables);
+            String replacement = variable.evaluate(variables, globals);
 
             if (replacement != null) {
                 replacement = MikiUtil.escapeString(replacement);

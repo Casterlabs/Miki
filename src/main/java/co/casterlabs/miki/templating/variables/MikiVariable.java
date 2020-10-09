@@ -20,7 +20,7 @@ public class MikiVariable {
         return this;
     }
 
-    public String evaluate(Map<String, String> variables) throws MikiTemplatingException {
+    public String evaluate(Map<String, String> variables, Map<String, String> globals) throws MikiTemplatingException {
         String variable = variables.get(this.name);
 
         if (variable != null) {
@@ -28,10 +28,6 @@ public class MikiVariable {
         } else {
             throw new MikiTemplatingException("Supplied variables are missing the key: " + this.name);
         }
-    }
-
-    public boolean requireGlobal() {
-        return false;
     }
 
 }
