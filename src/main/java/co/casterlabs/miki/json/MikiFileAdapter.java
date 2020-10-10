@@ -27,7 +27,7 @@ public class MikiFileAdapter {
     private static final Gson GSON = new Gson();
 
     private List<ConfigVariable> variables = new ArrayList<>();
-    private MikiTemplate template;
+    private MikiTemplate miki;
 
     @SerializedName("template")
     private String templateRaw = "";
@@ -49,7 +49,7 @@ public class MikiFileAdapter {
             }
         }
 
-        return this.template.format(variables, globals);
+        return this.miki.format(variables, globals);
     }
 
     public String format() throws MikiTemplatingException {
@@ -66,7 +66,7 @@ public class MikiFileAdapter {
             adapter.templateRaw = MikiUtil.getFromURI(adapter.templateLocation);
         }
 
-        adapter.template = Miki.parse(adapter.templateRaw);
+        adapter.miki = Miki.parse(adapter.templateRaw);
 
         return adapter;
     }
