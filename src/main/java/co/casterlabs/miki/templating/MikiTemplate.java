@@ -21,10 +21,10 @@ public class MikiTemplate {
     private @NonNull String template;
 
     public String format(@NonNull Map<String, String> variables, @NonNull Map<String, String> globals) throws MikiTemplatingException {
-        return this.formatAsWeb(variables, globals).getResult();
+        return this.formatAsWeb(variables, globals, new WebRequest()).getResult();
     }
 
-    public WebResponse formatAsWeb(@NonNull Map<String, String> variables, @NonNull Map<String, String> globals) throws MikiTemplatingException {
+    public WebResponse formatAsWeb(@NonNull Map<String, String> variables, @NonNull Map<String, String> globals, @NonNull WebRequest request) throws MikiTemplatingException {
         WebResponse response = new WebResponse();
         String result = this.template;
 
@@ -34,7 +34,7 @@ public class MikiTemplate {
             String replacement = null;
 
             if (variable instanceof MikiScriptVariable) {
-                ScriptProvider provider = ((MikiScriptVariable) variable).evaluateAsWeb(variables, globals);
+                ScriptProvider provider = ((MikiScriptVariable) variable).evaluateAsWeb(variables, globals, request);
 
                 replacement = provider.getResult();
 

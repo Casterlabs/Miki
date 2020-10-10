@@ -12,6 +12,7 @@ import com.google.gson.JsonObject;
 import co.casterlabs.miki.Miki;
 import co.casterlabs.miki.MikiUtil;
 import co.casterlabs.miki.templating.MikiTemplatingException;
+import co.casterlabs.miki.templating.WebRequest;
 import co.casterlabs.miki.templating.variables.scripting.ScriptProvider;
 import co.casterlabs.miki.templating.variables.scripting.ScriptProviderFactory;
 import co.casterlabs.miki.templating.variables.scripting.nashorn.NashornScriptProviderFactory;
@@ -76,10 +77,10 @@ public class MikiScriptVariable extends MikiVariable {
 
     @Override
     public String evaluate(Map<String, String> variables, Map<String, String> globals) throws MikiTemplatingException {
-        return this.evaluateAsWeb(variables, globals).getResult();
+        return this.evaluateAsWeb(variables, globals, new WebRequest()).getResult();
     }
 
-    public ScriptProvider evaluateAsWeb(Map<String, String> variables, Map<String, String> globals) throws MikiTemplatingException {
+    public ScriptProvider evaluateAsWeb(Map<String, String> variables, Map<String, String> globals, WebRequest request) throws MikiTemplatingException {
         try {
             ScriptProvider provider = scriptProviderFactory.newInstance();
 
@@ -93,8 +94,10 @@ public class MikiScriptVariable extends MikiVariable {
                 }
             });
 
+            // Hacky way to set variables, I know.
             provider.eval("const variables = " + getVariableObject(variables) + ";");
             provider.eval("const globals = " + getVariableObject(globals) + ";");
+            provider.eval(request.getScriptLine());
 
             provider.eval(this.name);
 
@@ -104,17 +107,14 @@ public class MikiScriptVariable extends MikiVariable {
         }
     }
 
-    // Hacky way to set variables, I know.
-    public static String getVariableObject(Map<String, String> variables) {
-        StringBuilder scriptVariables = new StringBuilder();
+    public static JsonObject getVariableObject(Map<String, String> variables) {
+        JsonObject json = new JsonObject();
 
-        scriptVariables.append(' ');
-
-        for (Map.Entry<String, String> entry : variables.entrySet()) {
-            scriptVariables.append('"').append(entry.getKey()).append("\":\"").append(entry.getValue()).append("\",");
+        for (Map.Entry<String, String> variable : variables.entrySet()) {
+            json.addProperty(variable.getKey(), variable.getValue());
         }
 
-        return String.format("{%s\n}", scriptVariables.substring(0, scriptVariables.length() - 1));
+        return json;
     }
 
 }

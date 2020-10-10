@@ -17,6 +17,7 @@ import co.casterlabs.miki.MikiUtil;
 import co.casterlabs.miki.parsing.MikiParsingException;
 import co.casterlabs.miki.templating.MikiTemplate;
 import co.casterlabs.miki.templating.MikiTemplatingException;
+import co.casterlabs.miki.templating.WebRequest;
 import co.casterlabs.miki.templating.WebResponse;
 import lombok.Getter;
 import lombok.NonNull;
@@ -39,11 +40,11 @@ public class MikiFileAdapter {
     @SerializedName("template_file")
     private String templateFile;
 
-    public String format(Map<String, String> globals) throws MikiTemplatingException {
-        return this.formatAsWeb(globals).getResult();
+    public String format(@NonNull Map<String, String> globals) throws MikiTemplatingException {
+        return this.formatAsWeb(globals, new WebRequest()).getResult();
     }
 
-    public WebResponse formatAsWeb(Map<String, String> globals) throws MikiTemplatingException {
+    public WebResponse formatAsWeb(@NonNull Map<String, String> globals, @NonNull WebRequest request) throws MikiTemplatingException {
         Map<String, String> variables = new HashMap<>();
 
         for (ConfigVariable variable : this.variables) {
@@ -54,7 +55,7 @@ public class MikiFileAdapter {
             }
         }
 
-        return this.miki.formatAsWeb(variables, globals);
+        return this.miki.formatAsWeb(variables, globals, request);
     }
 
     public String format() throws MikiTemplatingException {
