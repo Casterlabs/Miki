@@ -1,153 +1,107 @@
 package co.casterlabs.miki.templating.variables;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import co.casterlabs.miki.Miki;
+import co.casterlabs.miki.MikiUtil;
 import co.casterlabs.miki.templating.MikiTemplatingException;
-import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
+import co.casterlabs.miki.templating.variables.scripting.ScriptProvider;
+import co.casterlabs.miki.templating.variables.scripting.ScriptProviderFactory;
+import co.casterlabs.miki.templating.variables.scripting.nashorn.NashornScriptProviderFactory;
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.ToString;
-import xyz.e3ndr.fastloggingframework.logging.FastLogger;
 
 @ToString(callSuper = true)
-@SuppressWarnings({
-        "restriction",
-        "deprecation"
-})
 public class MikiScriptVariable extends MikiVariable {
-    private static final NashornScriptEngineFactory factory = new jdk.nashorn.api.scripting.NashornScriptEngineFactory();
+    private static @NonNull @Getter ScriptProviderFactory scriptProviderFactory = new NashornScriptProviderFactory();
+
     private static final List<String> mikiInject = new ArrayList<>();
-    private static final FastLogger logger = new FastLogger("MikiScripting");
+    private static String mikiOptions;
     private static final String[] mikiPoly = new String[] {
-            "document.js",
-            "console.js"
+            "miki/scriptpoly/document.js",
+            "miki/scriptpoly/console.js",
+            "miki/scriptpoly/io.js",
+            "miki/scriptpoly/store.js"
     };
 
     static {
         try {
             for (String polyName : mikiPoly) {
-                if (Miki.ideEnviroment) {
-                    File file = new File("src/main/resources/scripting", polyName);
-                    String poly = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-
-                    mikiInject.add(poly);
-                } else {
-                    InputStream in = Miki.class.getClassLoader().getResourceAsStream("scripting/" + polyName);
-                    String poly = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
-
-                    mikiInject.add(poly);
-                }
+                mikiInject.add(MikiUtil.loadInternalFile(polyName));
             }
 
-            Map<String, String> options = new HashMap<>();
-
-            options.put("version", Miki.VERSION);
-            options.put("parent", "java");
-            options.put("scriptProvider", "OracleNashorn");
-            options.put("parentVersion", System.getProperty("java.version"));
-
-            if (System.getProperty("java.version").contains("1.8")) {
-                options.put("scriptCompliance", "es6-partial");
-            } else {
-                options.put("scriptCompliance", "es6");
-            }
-
-            mikiInject.add(String.format("const Miki = %s;", getVariableObject(options)));
-
-            mikiInject.add("print = undefined;");
+            setScriptProviderFactory(new NashornScriptProviderFactory());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    public static void setScriptProviderFactory(ScriptProviderFactory factory) {
+        JsonObject options = new JsonObject();
+        JsonArray limitations = new JsonArray();
+
+        for (String limitation : factory.getLimitations()) {
+            limitations.add(limitation);
+        }
+
+        options.addProperty("version", Miki.VERSION);
+        options.addProperty("parent", "java");
+        options.addProperty("scriptProvider", factory.getName());
+        options.addProperty("parentVersion", System.getProperty("java.version"));
+        options.addProperty("scriptCompliance", factory.getCompliance());
+        options.add("limitations", limitations);
+
+        mikiOptions = String.format("const Miki = %s;", options.toString());
+    }
+
+    @Override
+    public MikiVariable init(String key, String name) throws MikiTemplatingException {
+        this.key = key;
+        this.name = MikiUtil.unescapeString(name);
+
+        if (this.name.startsWith("file://")) {
+            this.name = MikiUtil.getFromURI(this.name);
+        }
+
+        return this;
+    }
+
     @Override
     public String evaluate(Map<String, String> variables, Map<String, String> globals) throws MikiTemplatingException {
         try {
-            ScriptEngine engine = factory.getScriptEngine("--language=es6");
-            StringBuilder result = new StringBuilder();
+            ScriptProvider provider = scriptProviderFactory.newInstance();
 
-            engine.getContext().setWriter(new Writer() {
-
-                @Override
-                public void close() throws IOException {}
-
-                @Override
-                public void flush() throws IOException {}
-
-                @Override
-                public void write(char[] cbuf, int off, int len) throws IOException {
-                    // A reeeeeeeeeeeeeeeaaaaaaaaaaaallllllllllllllyyyyyy bad messaging system, but it works!
-                    StringBuilder line = new StringBuilder();
-
-                    for (int i = off; i != len + off; i++) {
-                        line.append(cbuf[i]);
-                    }
-
-                    if (line.charAt(0) == '!') {
-                        String message = line.substring(2);
-
-                        switch (line.charAt(1)) {
-                            case 'I':
-                                logger.info(message);
-                                return;
-
-                            case 'W':
-                                logger.warn(message);
-                                return;
-
-                            case 'S':
-                                logger.severe(message);
-                                return;
-
-                            case 'D':
-                                logger.debug(message);
-                                return;
-                        }
-                        result.append(line);
-                    } else if (line.charAt(0) == '#') {
-                        result.append(line.substring(1));
-                    } else {
-                        result.append(line);
-                    }
-                }
-
-            });
+            provider.eval(mikiOptions);
 
             mikiInject.forEach((poly) -> {
                 try {
-                    engine.eval(poly);
+                    provider.eval(poly);
                 } catch (ScriptException ignored) {
                     ignored.printStackTrace();
                 }
             });
 
-            engine.eval("const variables = " + getVariableObject(variables) + ";");
-            engine.eval("const globals = " + getVariableObject(globals) + ";");
+            provider.eval("const variables = " + getVariableObject(variables) + ";");
+            provider.eval("const globals = " + getVariableObject(globals) + ";");
 
-            engine.eval(this.name);
+            provider.eval(this.name);
 
-            return result.substring(0, result.length() - 2); // There's a random CRLF... Thanks Nashorn!
+            return provider.getResult();
         } catch (Exception e) {
             throw new MikiTemplatingException("Cannot evaluate script", e);
         }
     }
 
     // Hacky way to set variables, I know.
-    private static String getVariableObject(Map<String, String> variables) {
+    public static String getVariableObject(Map<String, String> variables) {
         StringBuilder scriptVariables = new StringBuilder();
 
         scriptVariables.append(' ');

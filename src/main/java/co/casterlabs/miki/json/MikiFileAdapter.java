@@ -27,19 +27,26 @@ public class MikiFileAdapter {
     private static final Gson GSON = new Gson();
 
     private List<ConfigVariable> variables = new ArrayList<>();
+    private MikiTemplate template;
+
+    @SerializedName("template")
     private String templateRaw = "";
+
     @SerializedName("template_location")
     private String templateLocation;
+
     @SerializedName("template_file")
     private String templateFile;
-    @SerializedName("template_raw")
-    private MikiTemplate template;
 
     public String format(Map<String, String> globals) throws MikiTemplatingException {
         Map<String, String> variables = new HashMap<>();
 
         for (ConfigVariable variable : this.variables) {
-            variables.put(variable.name, variable.value);
+            if (variable.value.contains("://")) {
+                variables.put(variable.name, MikiUtil.getFromURI(variable.value));
+            } else {
+                variables.put(variable.name, variable.value);
+            }
         }
 
         return this.template.format(variables, globals);

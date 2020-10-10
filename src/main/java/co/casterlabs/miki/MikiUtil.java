@@ -1,22 +1,29 @@
 package co.casterlabs.miki;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import co.casterlabs.miki.parsing.MikiParsingException;
 import co.casterlabs.miki.templating.MikiTemplatingException;
 import lombok.NonNull;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class MikiUtil {
+    private static final OkHttpClient client = new OkHttpClient();
 
     public static Map<String, String> parseKeys(@NonNull String input, char sign, char opening, char closing, char escape) throws MikiParsingException {
         Map<String, String> variables = new HashMap<>();
@@ -35,27 +42,48 @@ public class MikiUtil {
         return variables;
     }
 
-    public static String getFromURI(String location) throws MikiTemplatingException {
-        if (location.contains("://")) {
-            try {
-                URL url = new URL(location);
+    @SuppressWarnings("deprecation")
+    public static String loadInternalFile(String fileName) throws IOException {
+        if (Miki.ideEnviroment) {
+            File file = new File("src/main/resources/", fileName);
+            String raw = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
 
-                if (url.getProtocol().startsWith("http")) {
-                    return MikiUtil.sendHttp(url);
-                } else {
-                    throw new UnsupportedOperationException("Unsupported scheme: " + url.getProtocol());
-                }
-            } catch (Exception e) {
-                throw new MikiTemplatingException("Unable to read URL", e);
-            }
+            return raw;
         } else {
-            try {
-                byte[] bytes = Files.readAllBytes(new File(location).toPath());
+            InputStream in = Miki.class.getClassLoader().getResourceAsStream(fileName);
+            String raw = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
 
-                return new String(bytes);
-            } catch (Exception e) {
-                throw new MikiTemplatingException("Unable to read File", e);
+            return raw;
+        }
+    }
+
+    public static void writeFile(String location, String content) throws IOException {
+        Files.write(new File(location).toPath(), content.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static String getFile(String location) throws IOException {
+        byte[] bytes = Files.readAllBytes(new File(location).toPath());
+
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    public static String getFromURI(String location) throws MikiTemplatingException {
+        if (!location.contains("://")) {
+            location = "file://" + location;
+        }
+
+        try {
+            URL url = new URL(location);
+
+            if (url.getProtocol().startsWith("file")) {
+                return getFile(location.split("://")[1]);
+            } else if (url.getProtocol().startsWith("http")) {
+                return MikiUtil.sendHttp(null, null, url);
+            } else {
+                throw new UnsupportedOperationException("Unsupported scheme: " + url.getProtocol());
             }
+        } catch (Exception e) {
+            throw new MikiTemplatingException("Unable to read URL", e);
         }
     }
 
@@ -84,9 +112,12 @@ public class MikiUtil {
         return result;
     }
 
-    public static String sendHttp(URL url) throws IOException {
-        OkHttpClient client = new OkHttpClient();
+    public static String sendHttp(String method, String body, URL url) throws IOException {
         Request.Builder builder = new Request.Builder().url(url);
+
+        if ((method != null) && !method.equalsIgnoreCase("get")) {
+            builder.method(method, RequestBody.create(body.getBytes(StandardCharsets.UTF_8)));
+        }
 
         Request request = builder.build();
         Response response = client.newCall(request).execute();

@@ -13,7 +13,7 @@ public class MikiConditionalVariable extends MikiVariable {
     private String[] out;
 
     @Override
-    public MikiConditionalVariable init(String key, String sequence) {
+    public MikiConditionalVariable init(String key, String sequence) throws MikiTemplatingException {
         String[] sides = sequence.split("\\?");
 
         if (sides.length == 2) {

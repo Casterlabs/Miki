@@ -1,9 +1,12 @@
 const document = function () {
-	let nativePrint = print;
 
 	return {
 		print: function (obj) {
-			nativePrint("#" + obj);
+			Native.print(obj);
+		},
+
+		println: function (obj) {
+			Native.println(obj);
 		},
 
 		// voidTypes: ["area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"],

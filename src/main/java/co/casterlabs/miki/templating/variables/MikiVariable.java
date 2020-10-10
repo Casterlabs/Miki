@@ -13,7 +13,7 @@ public class MikiVariable {
     protected String key;
     protected String name;
 
-    public MikiVariable init(String key, String name) {
+    public MikiVariable init(String key, String name) throws MikiTemplatingException {
         this.key = key;
         this.name = MikiUtil.unescapeString(name);
 
