@@ -78,7 +78,7 @@ public class MikiUtil {
             if (url.getProtocol().startsWith("file")) {
                 return getFile(location.split("://")[1]);
             } else if (url.getProtocol().startsWith("http")) {
-                return MikiUtil.sendHttp(null, null, url);
+                return MikiUtil.sendHttp(null, null, location);
             } else {
                 throw new UnsupportedOperationException("Unsupported scheme: " + url.getProtocol());
             }
@@ -112,7 +112,7 @@ public class MikiUtil {
         return result;
     }
 
-    public static String sendHttp(String method, String body, URL url) throws IOException {
+    public static String sendHttp(String method, String body, String url) throws IOException {
         Request.Builder builder = new Request.Builder().url(url);
 
         if ((method != null) && !method.equalsIgnoreCase("get")) {
