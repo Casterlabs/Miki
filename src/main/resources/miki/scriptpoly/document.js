@@ -9,6 +9,18 @@ const document = function () {
 			Native.println(obj);
 		},
 
+		setHeader: function (key, value) {
+			Native.setHeader(key, value);
+		},
+
+		setMime: function (mime) {
+			Native.setMime(mime);
+		},
+
+		setStatus: function (code) {
+			Native.setStatus(code);
+		},
+
 		// voidTypes: ["area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"],
 
 		removeArrayElement: function (element, array) {

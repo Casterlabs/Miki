@@ -2,6 +2,8 @@ package co.casterlabs.miki.templating.variables.scripting.nashorn;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
@@ -11,6 +13,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import co.casterlabs.miki.templating.variables.scripting.ScriptProvider;
+import lombok.Getter;
 import xyz.e3ndr.fastloggingframework.logging.FastLogger;
 import xyz.e3ndr.fastloggingframework.logging.LogLevel;
 
@@ -18,7 +21,10 @@ public class NashornScriptProvider implements ScriptProvider {
     private static final FastLogger logger = new FastLogger();
     private static final Gson gson = new Gson();
 
+    private @Getter Map<String, String> headers = new HashMap<>();
     private StringBuilder result = new StringBuilder();
+    private @Getter String mime = "text/plain";
+    private @Getter int status = 200;
     private ScriptEngine engine;
 
     public NashornScriptProvider(ScriptEngine engine, String nativeHelper) throws ScriptException {
@@ -42,18 +48,44 @@ public class NashornScriptProvider implements ScriptProvider {
 
                 try {
                     JsonObject json = gson.fromJson(line.toString(), JsonObject.class);
+                    String type = json.get("type").getAsString().toLowerCase();
 
-                    if (json.get("type").getAsString().equalsIgnoreCase("log")) {
-                        LogLevel level = LogLevel.valueOf(json.get("level").getAsString().toUpperCase());
+                    switch (type) {
+                        case "log": {
+                            LogLevel level = LogLevel.valueOf(json.get("level").getAsString().toUpperCase());
 
-                        logger.log(level, getElementString(json.get("message")));
-                    } else {
-                        result.append(getElementString(json.get("message")));
-
-                        if (json.get("new_line").getAsBoolean()) {
-                            result.append('\n');
+                            logger.log(level, getElementString(json.get("message")));
+                            return;
                         }
+
+                        case "status": {
+                            status = json.get("status").getAsInt();
+                            return;
+                        }
+
+                        case "mime": {
+                            mime = json.get("mime").getAsString();
+                            return;
+                        }
+
+                        case "header": {
+                            headers.put(json.get("key").getAsString(), json.get("value").getAsString());
+                            return;
+                        }
+
+                        case "print": {
+                            result.append(getElementString(json.get("message")));
+
+                            if (json.get("new_line").getAsBoolean()) {
+                                result.append("\r\n"); // CRLF as this is meant for the web.
+                            }
+                            return;
+                        }
+
+                        default:
+                            return;
                     }
+
                 } catch (NullPointerException ignored) {} // Nashorn will randomly generate blank lines
             }
 

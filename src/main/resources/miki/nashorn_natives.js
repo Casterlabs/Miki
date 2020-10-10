@@ -31,6 +31,28 @@ const Native = function () {
             return new File(path).createNewFile();
         },
 
+        setHeader: function (key, value) {
+            nativeOut(JSON.stringify({
+                type: "header",
+                key: key,
+                value: value
+            }));
+        },
+
+        setMime: function (mime) {
+            nativeOut(JSON.stringify({
+                type: "mime",
+                mime: mime
+            }));
+        },
+
+        setStatus: function (code) {
+            nativeOut(JSON.stringify({
+                type: "status",
+                status: code
+            }));
+        },
+
         webRequest: function (url, method, body) {
             return JSON.parse(Java.type("co.casterlabs.miki.MikiUtil").sendHttp(method, body, url));
         },

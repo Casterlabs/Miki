@@ -76,6 +76,10 @@ public class MikiScriptVariable extends MikiVariable {
 
     @Override
     public String evaluate(Map<String, String> variables, Map<String, String> globals) throws MikiTemplatingException {
+        return this.evaluateAsWeb(variables, globals).getResult();
+    }
+
+    public ScriptProvider evaluateAsWeb(Map<String, String> variables, Map<String, String> globals) throws MikiTemplatingException {
         try {
             ScriptProvider provider = scriptProviderFactory.newInstance();
 
@@ -94,7 +98,7 @@ public class MikiScriptVariable extends MikiVariable {
 
             provider.eval(this.name);
 
-            return provider.getResult();
+            return provider;
         } catch (Exception e) {
             throw new MikiTemplatingException("Cannot evaluate script", e);
         }

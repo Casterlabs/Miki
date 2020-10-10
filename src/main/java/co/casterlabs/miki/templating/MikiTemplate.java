@@ -4,10 +4,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
-
 import co.casterlabs.miki.MikiUtil;
+import co.casterlabs.miki.templating.variables.MikiScriptVariable;
 import co.casterlabs.miki.templating.variables.MikiVariable;
+import co.casterlabs.miki.templating.variables.scripting.ScriptProvider;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -20,15 +20,30 @@ public class MikiTemplate {
     private @NonNull List<MikiVariable> variables;
     private @NonNull String template;
 
-    private @Nullable String preformatted;
-
     public String format(@NonNull Map<String, String> variables, @NonNull Map<String, String> globals) throws MikiTemplatingException {
+        return this.formatAsWeb(variables, globals).getResult();
+    }
+
+    public WebResponse formatAsWeb(@NonNull Map<String, String> variables, @NonNull Map<String, String> globals) throws MikiTemplatingException {
+        WebResponse response = new WebResponse();
         String result = this.template;
 
         globals = MikiUtil.lowercaseMap(globals);
 
         for (MikiVariable variable : this.variables) {
-            String replacement = variable.evaluate(variables, globals);
+            String replacement = null;
+
+            if (variable instanceof MikiScriptVariable) {
+                ScriptProvider provider = ((MikiScriptVariable) variable).evaluateAsWeb(variables, globals);
+
+                replacement = provider.getResult();
+
+                response.setMime(provider.getMime());
+                response.setStatus(provider.getStatus());
+                response.getHeaders().putAll(provider.getHeaders());
+            } else {
+                replacement = variable.evaluate(variables, globals);
+            }
 
             if (replacement != null) {
                 replacement = MikiUtil.escapeString(replacement);
@@ -36,25 +51,16 @@ public class MikiTemplate {
             } else {
                 throw new MikiTemplatingException("Supplied variables are missing the key: " + variable);
             }
+
         }
 
-        return MikiUtil.unescapeString(result);
+        response.setResult(MikiUtil.unescapeString(result));
+
+        return response;
     }
 
     public String format(@NonNull Map<String, String> variables) throws MikiTemplatingException {
         return this.format(variables, Collections.emptyMap());
-    }
-
-    public String preformat(@NonNull Map<String, String> variables, @NonNull Map<String, String> globals) throws MikiTemplatingException {
-        return this.preformatted = this.format(variables, globals);
-    }
-
-    public String preformat(@NonNull Map<String, String> variables) throws MikiTemplatingException {
-        return this.preformatted = this.format(variables);
-    }
-
-    public boolean isPreformatted() {
-        return this.preformatted != null;
     }
 
 }
