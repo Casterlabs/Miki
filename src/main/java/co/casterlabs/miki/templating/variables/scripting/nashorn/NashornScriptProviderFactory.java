@@ -13,6 +13,7 @@ import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
         "restriction"
 })
 public class NashornScriptProviderFactory implements ScriptProviderFactory {
+    @SuppressWarnings("removal")
     private static final NashornScriptEngineFactory factory = new jdk.nashorn.api.scripting.NashornScriptEngineFactory();
     private static String nativeHelper;
 
