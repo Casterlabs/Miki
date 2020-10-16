@@ -2,8 +2,6 @@ package co.casterlabs.miki.json;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,11 +48,13 @@ public class MikiFileAdapter {
         Map<String, String> variables = new HashMap<>();
 
         for (ConfigVariable variable : this.variables) {
-            try {
-                new URI(variable.value);
-
-                variables.put(variable.name, MikiUtil.getFromURI(variable.value));
-            } catch (URISyntaxException ignored) {
+            if (variable.location != null) {
+                try {
+                    variables.put(variable.name, MikiUtil.getFromURI(variable.location));
+                } catch (Exception defaulted) {
+                    variables.put(variable.name, variable.value);
+                }
+            } else {
                 variables.put(variable.name, variable.value);
             }
         }
@@ -84,6 +84,7 @@ public class MikiFileAdapter {
     private static class ConfigVariable {
         private String name;
         private String value;
+        private String location;
 
     }
 
