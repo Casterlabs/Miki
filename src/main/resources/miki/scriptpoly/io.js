@@ -23,14 +23,17 @@ const files = {
 
 const internet = {
     get: function (url) {
-        return Native.webRequest(url, null, null);
+        return Native.webRequest(url);
     },
 
     post: function (url, body) {
-        return Native.webRequest(url, "post", body);
+        return Native.webRequest(url, {
+            method: "post",
+            body: body
+        });
     },
 
-    method: function (url, method, body) {
-        return Native.webRequest(url, method, body);
+    send: function (url, data) {
+        return Native.webRequest(url, data);
     }
 };

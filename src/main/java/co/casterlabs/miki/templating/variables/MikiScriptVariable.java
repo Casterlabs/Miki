@@ -1,5 +1,6 @@
 package co.casterlabs.miki.templating.variables;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import co.casterlabs.miki.templating.variables.scripting.nashorn.NashornScriptPr
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
+import okhttp3.Response;
 
 @ToString(callSuper = true)
 public class MikiScriptVariable extends MikiVariable {
@@ -115,6 +117,38 @@ public class MikiScriptVariable extends MikiVariable {
         }
 
         return json;
+    }
+
+    public static String getEvaluatedHttpRequest(String method, String body, String url, Map<String, String> headers) throws IOException {
+        Response response = MikiUtil.sendHttp(method, body, url, headers);
+        JsonObject json = new JsonObject();
+        JsonObject responseHeaders = new JsonObject();
+
+        response.headers().forEach((pair) -> {
+            responseHeaders.addProperty(pair.component1(), pair.component2());
+        });
+
+        json.addProperty("code", response.code());
+        json.addProperty("body", response.body().string());
+        json.add("headers", responseHeaders);
+
+        return json.toString();
+    }
+
+    public static String getEvaluatedFormHttpRequest(String method, Map<String, String> body, String url, Map<String, String> headers) throws IOException {
+        Response response = MikiUtil.sendHttpForm(method, body, url, headers);
+        JsonObject json = new JsonObject();
+        JsonObject responseHeaders = new JsonObject();
+
+        response.headers().forEach((pair) -> {
+            responseHeaders.addProperty(pair.component1(), pair.component2());
+        });
+
+        json.addProperty("code", response.code());
+        json.addProperty("body", response.body().string());
+        json.add("headers", responseHeaders);
+
+        return json.toString();
     }
 
 }

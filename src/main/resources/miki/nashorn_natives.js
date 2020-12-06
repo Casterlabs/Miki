@@ -1,6 +1,8 @@
 const Native = function () {
     const File = Java.type("java.io.File");
-    let nativeOut = print;
+    const HashMap = Java.type("java.util.HashMap");
+
+    const nativeOut = print;
 
     return {
         print: function (obj) {
@@ -53,8 +55,29 @@ const Native = function () {
             }));
         },
 
-        webRequest: function (url, method, body) {
-            return JSON.parse(Java.type("co.casterlabs.miki.MikiUtil").sendHttp(method, body, url));
+        webRequest: function (url, data) {
+            if (data == null) {
+                data = {
+                    method: "get",
+                    body: null,
+                    headers: {},
+                    form: false
+                };
+            }
+
+            if (typeof data.headers !== "object") {
+                data.headers = {};
+            }
+
+            if (data.form) {
+                return JSON.parse(Java.type("co.casterlabs.miki.templating.variables.MikiScriptVariable").getEvaluatedFormHttpRequest(data.method, data.body, url, data.headers));
+            } else {
+                if (typeof data.body !== "string") {
+                    data.body = JSON.stringify(data.body);
+                }
+
+                return JSON.parse(Java.type("co.casterlabs.miki.templating.variables.MikiScriptVariable").getEvaluatedHttpRequest(data.method, data.body, url, data.headers));
+            }
         },
 
         write: function (file, content) {

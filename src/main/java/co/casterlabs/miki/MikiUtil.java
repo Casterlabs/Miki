@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import co.casterlabs.miki.parsing.MikiParsingException;
 import co.casterlabs.miki.templating.MikiTemplatingException;
 import lombok.NonNull;
+import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -78,7 +79,7 @@ public class MikiUtil {
             if (url.getProtocol().startsWith("file")) {
                 return getFile(location.split("://")[1]);
             } else if (url.getProtocol().startsWith("http")) {
-                return MikiUtil.sendHttp(null, null, location);
+                return MikiUtil.sendHttp(null, null, location, null).body().string();
             } else {
                 throw new UnsupportedOperationException("Unsupported scheme: " + url.getProtocol());
             }
@@ -112,17 +113,48 @@ public class MikiUtil {
         return result;
     }
 
-    public static String sendHttp(String method, String body, String url) throws IOException {
+    public static Response sendHttp(String method, String body, String url, Map<String, String> headers) throws IOException {
         Request.Builder builder = new Request.Builder().url(url);
 
         if ((method != null) && !method.equalsIgnoreCase("get")) {
-            builder.method(method, RequestBody.create(body.getBytes(StandardCharsets.UTF_8)));
+            builder.method(method, RequestBody.create(body.getBytes()));
+        }
+
+        if (headers != null) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                builder.addHeader(entry.getKey(), entry.getValue());
+            }
         }
 
         Request request = builder.build();
         Response response = client.newCall(request).execute();
 
-        return response.body().string();
+        return response;
+    }
+
+    public static Response sendHttpForm(String method, Map<String, String> body, String url, Map<String, String> headers) throws IOException {
+        Request.Builder builder = new Request.Builder().url(url);
+
+        if ((method != null) && !method.equalsIgnoreCase("get")) {
+            FormBody.Builder form = new FormBody.Builder();
+
+            for (Map.Entry<String, String> entry : body.entrySet()) {
+                form.addEncoded(entry.getKey(), entry.getValue());
+            }
+
+            builder.method(method, form.build());
+        }
+
+        if (headers != null) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                builder.addHeader(entry.getKey(), entry.getValue());
+            }
+        }
+
+        Request request = builder.build();
+        Response response = client.newCall(request).execute();
+
+        return response;
     }
 
     public static List<Integer> getSignPositions(@NonNull String str, char sign, char escape) {
