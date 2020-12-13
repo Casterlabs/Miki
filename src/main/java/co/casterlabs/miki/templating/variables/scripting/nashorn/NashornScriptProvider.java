@@ -1,13 +1,11 @@
 package co.casterlabs.miki.templating.variables.scripting.nashorn;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 
@@ -33,7 +31,7 @@ public class NashornScriptProvider implements ScriptProvider {
     public NashornScriptProvider(ScriptEngine engine, String nativeHelper) throws ScriptException {
         this.engine = engine;
 
-        engine.getContext().setWriter(new Writer() {
+        this.engine.getContext().setWriter(new Writer() {
 
             @Override
             public void close() throws IOException {}
@@ -66,19 +64,6 @@ public class NashornScriptProvider implements ScriptProvider {
                             return;
                         }
 
-                        case "require": {
-                            String toLoad = json.get("script").getAsString();
-
-                            try {
-                                String script = new String(Files.readAllBytes(new File(toLoad).toPath()), StandardCharsets.UTF_8);
-
-                                engine.eval(script);
-                            } catch (ScriptException e) {
-                                logger.severe("Unable to load library: %s\nError: %s", toLoad, e.getMessage());
-                            }
-                            return;
-                        }
-
                         case "mime": {
                             mime = json.get("mime").getAsString();
                             return;
@@ -106,6 +91,8 @@ public class NashornScriptProvider implements ScriptProvider {
             }
 
         });
+
+        this.engine.getContext().setAttribute("__engine", this.engine, ScriptContext.ENGINE_SCOPE);
 
         this.engine.eval(nativeHelper);
     }

@@ -56,10 +56,13 @@ const Native = function () {
         },
 
         require: function (file) {
-            nativeOut(JSON.stringify({
-                type: "require",
-                status: file
-            }));
+            try {
+                var script = this.getFile(file);
+
+                __engine.eval(script);
+            } catch (e) {
+                console.severe("Unable to load library: " + file + "\nError: " + e);
+            }
         },
 
         webRequest: function (url, data) {
