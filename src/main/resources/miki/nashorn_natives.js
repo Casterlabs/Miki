@@ -55,6 +55,13 @@ const Native = function () {
             }));
         },
 
+        require: function (file) {
+            nativeOut(JSON.stringify({
+                type: "require",
+                status: file
+            }));
+        },
+
         webRequest: function (url, data) {
             if (data == null) {
                 data = {

@@ -1,7 +1,10 @@
 package co.casterlabs.miki.templating.variables.scripting.nashorn;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,6 +63,19 @@ public class NashornScriptProvider implements ScriptProvider {
 
                         case "status": {
                             status = json.get("status").getAsInt();
+                            return;
+                        }
+
+                        case "require": {
+                            String toLoad = json.get("script").getAsString();
+
+                            try {
+                                String script = new String(Files.readAllBytes(new File(toLoad).toPath()), StandardCharsets.UTF_8);
+
+                                engine.eval(script);
+                            } catch (ScriptException e) {
+                                logger.severe("Unable to load library: %s\nError: %s", toLoad, e.getMessage());
+                            }
                             return;
                         }
 

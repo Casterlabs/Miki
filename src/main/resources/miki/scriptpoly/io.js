@@ -37,3 +37,7 @@ const internet = {
         return Native.webRequest(url, data);
     }
 };
+
+const require = function(file) {
+	Native.require(file);
+}

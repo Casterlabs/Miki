@@ -51,7 +51,6 @@ public class MikiTemplate {
             } else {
                 throw new MikiTemplatingException("Supplied variables are missing the key: " + variable);
             }
-
         }
 
         response.setResult(MikiUtil.unescapeString(result));
