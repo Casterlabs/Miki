@@ -17,8 +17,6 @@ import co.casterlabs.miki.MikiUtil;
 import co.casterlabs.miki.parsing.MikiParsingException;
 import co.casterlabs.miki.templating.MikiTemplate;
 import co.casterlabs.miki.templating.MikiTemplatingException;
-import co.casterlabs.miki.templating.WebRequest;
-import co.casterlabs.miki.templating.WebResponse;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
@@ -37,14 +35,7 @@ public class MikiFileAdapter {
     @SerializedName("template_location")
     private String templateLocation;
 
-    @SerializedName("template_file")
-    private String templateFile;
-
     public String format(@NonNull Map<String, String> globals) throws MikiTemplatingException {
-        return this.formatAsWeb(globals, new WebRequest()).getResult();
-    }
-
-    public WebResponse formatAsWeb(@NonNull Map<String, String> globals, @NonNull WebRequest request) throws MikiTemplatingException {
         Map<String, String> variables = new HashMap<>();
 
         for (ConfigVariable variable : this.variables) {
@@ -59,7 +50,7 @@ public class MikiFileAdapter {
             }
         }
 
-        return this.miki.formatAsWeb(variables, globals, request);
+        return this.miki.format(variables, globals);
     }
 
     public String format() throws MikiTemplatingException {
@@ -70,11 +61,7 @@ public class MikiFileAdapter {
         String json = new String(Files.readAllBytes(file.toPath()));
         MikiFileAdapter adapter = GSON.fromJson(json, MikiFileAdapter.class);
 
-        if (adapter.templateFile != null) {
-            adapter.templateRaw = new String(Files.readAllBytes(new File(file.getParentFile(), adapter.templateFile).toPath()));
-        } else if (adapter.templateLocation != null) {
-            adapter.templateRaw = MikiUtil.getFromURI(adapter.templateLocation);
-        }
+        adapter.templateRaw = MikiUtil.getFromURI(adapter.templateLocation);
 
         adapter.miki = Miki.parse(adapter.templateRaw);
 

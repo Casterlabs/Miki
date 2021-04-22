@@ -1,7 +1,9 @@
 package co.casterlabs.miki.templating.variables;
 
+import java.net.MalformedURLException;
 import java.util.Map;
 
+import co.casterlabs.miki.MikiUtil;
 import co.casterlabs.miki.templating.MikiTemplatingException;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
@@ -52,7 +54,13 @@ public class MikiConditionalVariable extends MikiVariable {
                 result = !result;
             }
 
-            return this.out[result ? 0 : 1];
+            String value = this.out[result ? 0 : 1];
+
+            try {
+                return MikiUtil.getFromURI(value);
+            } catch (MalformedURLException e) {
+                return value;
+            }
         } else {
             throw new MikiTemplatingException("Supplied variables are missing the key for conditional: " + this.name);
         }

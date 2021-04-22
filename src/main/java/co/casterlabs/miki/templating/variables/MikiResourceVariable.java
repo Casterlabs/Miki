@@ -1,5 +1,6 @@
 package co.casterlabs.miki.templating.variables;
 
+import java.net.MalformedURLException;
 import java.util.Map;
 
 import co.casterlabs.miki.MikiUtil;
@@ -7,7 +8,7 @@ import co.casterlabs.miki.templating.MikiTemplatingException;
 import lombok.ToString;
 
 @ToString(callSuper = true)
-public class MikiFileVariable extends MikiVariable {
+public class MikiResourceVariable extends MikiVariable {
 
     @Override
     public MikiVariable init(String key, String name) throws MikiTemplatingException {
@@ -19,7 +20,11 @@ public class MikiFileVariable extends MikiVariable {
 
     @Override
     public String evaluate(Map<String, String> variables, Map<String, String> globals) throws MikiTemplatingException {
-        return MikiUtil.getFromURI(this.name);
+        try {
+            return MikiUtil.getFromURI(this.name);
+        } catch (MalformedURLException e) {
+            throw new MikiTemplatingException("Could not retrive resource: " + e.getMessage());
+        }
     }
 
 }
